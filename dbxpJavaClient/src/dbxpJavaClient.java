@@ -30,26 +30,32 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 
-/*
-The MIT License (MIT)
-Copyright (c) 2012 andra.waagmeester@maastrichtuniversity.nl
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
 
 
 public class dbxpJavaClient {
 
-		
+	/* This is java client to connect to http://studies.dbnp.org or http://old.studies.dbnp.org
+	 * it contains calls for the following api calls
+	 * authenticate;
+	 * authenticate - set up / synchronize client-server session
+	 * getStudies - fetch all (readable) studies
+     * getSubjectsForStudy - fetch all subjects in a given study
+     * getAssaysForStudy - fetch all assays in a given study
+     * getSamplesForAssay - fetch all samples in a given assay
+     * getMeasurementDataForAssay - fetch all measurement data for a given assay
+	 * For a detailed description of all api calls please consult: http://studies.dbnp.org/api
+	 */
 
+	/* The block below contains the login credentials for studies and oldstudies. These credentials can be obtained 
+	 * by going to studies.dbnp.org and old.studied.dbnp.org. 
+	 * In the right corner you can Login or Register
+	 * Once logged in you can obtain the api Key the profile menu.
+	 * 
+	 * Switching between studies and old.studies can be done by uncommenting one and uncommenting the other.
+	 */
 	//User specific credentials old studies 
 	/*private static String userName = "";
 	private static String password = "";
-	private static String host = "old.studies.dbnp.org/";
 	private static String baseApiUrl = "http://old.studies.dbnp.org/api/";
 	private static String apiKey = "";
    */
@@ -74,6 +80,11 @@ public class dbxpJavaClient {
 	 * @throws NoSuchAlgorithmException 
 	 */
 
+	/* getMacAddress retrieves the unique MAC address of the client computer. 
+	 * This is needed to create a unique device ID. 
+	 * The deviceID is created in getDeviceID.
+	 * 
+	 */
 	public static String getMacAddress() throws SocketException, UnknownHostException{ 
 		InetAddress ip = InetAddress.getLocalHost();
 		NetworkInterface network = NetworkInterface.getByInetAddress(ip);
@@ -92,13 +103,15 @@ public class dbxpJavaClient {
 		return getMD5Sum(deviceId);
 	}
 
+	/* getMD5Sum returns the MD5 sum of the variable parameteren */
+	
 	public static String getMD5Sum(String variable) throws NoSuchAlgorithmException{	
 		MessageDigest md=MessageDigest.getInstance("MD5");
 		md.update(variable.getBytes());
 		return new BigInteger(1,md.digest()).toString(16);
 	}
 
-
+   /* Post values submit the POST variables to url and returns the respons *?    */
 	public static HttpResponse postValues(HashMap<String, String> postvars, String url) throws NoSuchAlgorithmException, ClientProtocolException, IOException{
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		httpclient.getCredentialsProvider().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
@@ -117,7 +130,10 @@ public class dbxpJavaClient {
 		HttpContext localContext = new BasicHttpContext();
 		return httpclient.execute(httppost, localContext);
 	}
-
+	
+    /* Below is the Java implementation of authenticate http://studies.dbnp.org/api#authenticate
+     * it returns a Map containing both the token and the sequence.
+     */
 	public static Map<String, String> authenticate() throws IOException, NoSuchAlgorithmException{
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		httpclient.getCredentialsProvider().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
@@ -141,7 +157,10 @@ public class dbxpJavaClient {
 		sequence = Integer.valueOf(loginData.get("sequence"));	
 		return loginData;
 	}
-
+    /* Except for authentication, do all other calls require a validation parameter. This is the MD5 sum of the token, 
+     *  the sequence and the api key. The token is returned by authenticate. Each time an api call is sent, the sequence needs to be increased by 
+     * one. The api key can be retrieved in the use profile on the website (see above) 
+     */
 	public static String getValidation() throws IOException, NoSuchAlgorithmException {
 		sequence++;
 		String validation = token+sequence+apiKey;    
@@ -149,6 +168,9 @@ public class dbxpJavaClient {
 		return md5;
 	}
 
+	/* getStudies returns all the available studies. It requires the deviceID and the validation value from getValidation()
+	 * for details see: http://studies.dbnp.org/api#getStudies 
+	 */
 	public static Map<String, Object> getStudies() throws IOException, NoSuchAlgorithmException{
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
@@ -165,6 +187,10 @@ public class dbxpJavaClient {
 		return studiesData;
 	}
 
+	/* getSubjectsForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 * the studytoken returned by getStudies
+	 * for details see: http://studies.dbnp.org/api#getSubjectsForStudy 
+	 */
 	public static Map<String, Object> getSubjectsForStudy(String studyToken) throws NoSuchAlgorithmException, IOException{
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
@@ -182,6 +208,10 @@ public class dbxpJavaClient {
 		return subjectsData;
 	}
 
+	/* getSubjectsForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 * the studytoken returned by getStudies
+	 * for details see: http://studies.dbnp.org/api#getAssayForStudy 
+	 */
 	public static Map<String, Object> getAssaysForStudy(String studyToken) throws NoSuchAlgorithmException, IOException{
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
@@ -199,6 +229,10 @@ public class dbxpJavaClient {
 		return subjectsData;
 	}
 
+	/* getSamplesForAssay returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 * the assaytoken returned by getAssaysForStudy
+	 * for details see: http://studies.dbnp.org/api#getSamplesForAssay
+	 */
 	public static Map<String, Object> getSamplesForAssay(String assayToken) throws NoSuchAlgorithmException, IOException{
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
@@ -216,6 +250,10 @@ public class dbxpJavaClient {
 		return subjectsData;
 	}
 
+	/* getMeasurementDataForAssay returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 * the assaytoken returned by getAssaysForStudy
+	 * for details see: http://studies.dbnp.org/api#getMeasurementDataForAssay
+	 */
 	public static Map<String, Object> getMeasurementDataForAssay(String assayToken) throws NoSuchAlgorithmException, IOException{
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
