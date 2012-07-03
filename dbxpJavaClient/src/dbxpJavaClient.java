@@ -54,17 +54,18 @@ public class dbxpJavaClient {
 	 * Switching between studies and old.studies can be done by uncommenting one and uncommenting the other.
 	 */
 	//User specific credentials old studies 
-	/*private static String userName = "";
-	private static String password = "";
+	/*private static String userName = "andrawaag";
+	private static String password = "welkom";
+	private static String host = "old.studies.dbnp.org/";
 	private static String baseApiUrl = "http://old.studies.dbnp.org/api/";
-	private static String apiKey = "";
+	private static String apiKey = "74b73415-2973-4fb0-8494-4458043be0fe";
    */
 	
 	//User specific credentials  studies 
-	private static String userName = "";
-	private static String password = "";
+	private static String userName = "andrawaag";
+	private static String password = "3kkdzoe#";
 	private static String baseApiUrl = "http://studies.dbnp.org/api/";
-    private static String apiKey = "";
+    private static String apiKey = "e5484d2d-6446-4b5e-abf2-f8748b1c5ff1";
 	 
 
 	//Local variables
