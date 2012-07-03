@@ -208,7 +208,7 @@ public class dbxpJavaClient {
 		return subjectsData;
 	}
 
-	/* getSubjectsForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	/* getAssaysForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
 	 * the studytoken returned by getStudies
 	 * for details see: http://studies.dbnp.org/api#getAssayForStudy 
 	 */

@@ -15,33 +15,28 @@ JAVA client to interface with the GSCF api
 
 ### Authenticate ###
 
-```Java
-  public static Map<String, String> authenticate() throws IOException, NoSuchAlgorithmException{
-		DefaultHttpClient httpclient = new DefaultHttpClient();
-		httpclient.getCredentialsProvider().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-				new UsernamePasswordCredentials(userName, password));
+Below is the Java implementation of authenticate http://studies.dbnp.org/api#authenticate
+it returns a Map containing both the token and the sequence.
 
-		List<NameValuePair> formparams = new ArrayList<NameValuePair>();
-		HashMap<String, String> formvars = new HashMap<String, String>();
-		formvars.put("deviceID", getDeviceId());
-		HttpResponse response = postValues(formvars, baseApiUrl+"authenticate");	
-		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-		String json = "";
-		String s = "";
-		while ((s = stdInput.readLine()) != null) {
-			json += s;
-		}
-		
-		Gson gson = new Gson();
-		Map<String, String> loginData = gson.fromJson(json, new TypeToken<Map<String, String>>(){}.getType());
-		
-		token = loginData.get("token");
-		sequence = Integer.valueOf(loginData.get("sequence"));	
-		return loginData;
-	}
-```
 ### getStudies ###
+getStudies returns all the available studies. It requires the deviceID and the validation value from getValidation()
+for details see: http://studies.dbnp.org/api#getStudies 
+   
 ### getSubjectsForStudy ###
+getSubjectsForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+the studytoken returned by getStudies
+for details see: http://studies.dbnp.org/api#getSubjectsForStudy 
+
 ### getAssaysForStudy ###
+   getAssaysForStudy returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 the studytoken returned by getStudies
+	 for details see: http://studies.dbnp.org/api#getAssayForStudy 
 ### getSamplesForAssay ###
+  getSamplesForAssay returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of 
+	 the assaytoken returned by getAssaysForStudy
+	 for details see: http://studies.dbnp.org/api#getSamplesForAssay
+	 
 ### getMeasurementDataForAssay ###
+  getMeasurementDataForAssay returns all the available studies. It requires the deviceID, the validation value from getValidation(), and one of the assaytoken returned by getAssaysForStudy
+	 for details see: http://studies.dbnp.org/api#getMeasurementDataForAssay
+	 
