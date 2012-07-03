@@ -1,7 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -14,23 +13,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.params.AuthPolicy;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 
 /*
 The MIT License (MIT)
@@ -46,14 +44,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 public class dbxpJavaClient {
 
-	
+		
+
 	//User specific credentials old studies 
+	/*private static String userName = "";
+	private static String password = "";
+	private static String host = "old.studies.dbnp.org/";
+	private static String baseApiUrl = "http://old.studies.dbnp.org/api/";
+	private static String apiKey = "";
+   */
+	
+	//User specific credentials  studies 
 	private static String userName = "";
 	private static String password = "";
-	private static String host = "";
-	private static String baseApiUrl = "";
+	private static String baseApiUrl = "http://studies.dbnp.org/api/";
     private static String apiKey = "";
-    
+	 
+
 	//Local variables
 	private static String authenticate=null;
 	private static String token="";
@@ -78,7 +85,7 @@ public class dbxpJavaClient {
 		//System.out.println(sb.toString());
 		return sb.toString();
 	}
-	
+
 	public static String getDeviceId() throws NoSuchAlgorithmException, SocketException, UnknownHostException {
 		String deviceId = getMacAddress()+userName;
 		//System.out.println(deviceId);
@@ -90,12 +97,12 @@ public class dbxpJavaClient {
 		md.update(variable.getBytes());
 		return new BigInteger(1,md.digest()).toString(16);
 	}
-	
-	@SuppressWarnings("rawtypes")
+
+
 	public static HttpResponse postValues(HashMap<String, String> postvars, String url) throws NoSuchAlgorithmException, ClientProtocolException, IOException{
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		httpclient.getCredentialsProvider().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-                new UsernamePasswordCredentials(userName, password));
+				new UsernamePasswordCredentials(userName, password));
 
 		List<NameValuePair> formparams = new ArrayList<NameValuePair>();
 		Iterator it = postvars.entrySet().iterator();
@@ -111,15 +118,14 @@ public class dbxpJavaClient {
 		return httpclient.execute(httppost, localContext);
 	}
 
-	public static void authenticate() throws IOException, NoSuchAlgorithmException{
+	public static Map<String, String> authenticate() throws IOException, NoSuchAlgorithmException{
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		httpclient.getCredentialsProvider().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
-                new UsernamePasswordCredentials(userName, password));
+				new UsernamePasswordCredentials(userName, password));
 
 		List<NameValuePair> formparams = new ArrayList<NameValuePair>();
 		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
-
 		HttpResponse response = postValues(formvars, baseApiUrl+"authenticate");	
 		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 		String json = "";
@@ -127,21 +133,13 @@ public class dbxpJavaClient {
 		while ((s = stdInput.readLine()) != null) {
 			json += s;
 		}
-		System.out.println("JSON: "+json);
-		json = json.replace("{", "");
-		json = json.replace("}", "");
-		String[] elements = json.split(",");
-		HashMap<String, String> hm = new HashMap<String, String>();
-		for (int i=0; i<elements.length; i++){
-			String[] keyValuePair = elements[i].split(":");
-			//System.out.println(elements.length);
-			hm.put(keyValuePair[0].replace("\"", ""), keyValuePair[1].replace("\"", ""));
-
-		}
-		token = hm.get("token");
-		sequence = Integer.valueOf(hm.get("sequence"));
-		//System.out.println("Token"+hm.get("token"));
-		//System.out.print(sequence);
+		
+		Gson gson = new Gson();
+		Map<String, String> loginData = gson.fromJson(json, new TypeToken<Map<String, String>>(){}.getType());
+		
+		token = loginData.get("token");
+		sequence = Integer.valueOf(loginData.get("sequence"));	
+		return loginData;
 	}
 
 	public static String getValidation() throws IOException, NoSuchAlgorithmException {
@@ -151,27 +149,114 @@ public class dbxpJavaClient {
 		return md5;
 	}
 
-	public static String getStudies() throws IOException, NoSuchAlgorithmException{
-		HashMap<String, String> formvars = new HashMap();
+	public static Map<String, Object> getStudies() throws IOException, NoSuchAlgorithmException{
+		HashMap<String, String> formvars = new HashMap<String, String>();
 		formvars.put("deviceID", getDeviceId());
 		formvars.put("validation", getValidation());
-		HttpContext localContext = new BasicHttpContext();
 		HttpResponse response = postValues(formvars, baseApiUrl+"getStudies");	
 		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-		String returnValue = "";
+		String json = "";
 		String s = "";
 		while ((s = stdInput.readLine()) != null) {
-			returnValue += s;
+			json += s;
 		} 
-		System.out.println("Return: "+returnValue);
-		return returnValue;
+		Gson gson = new Gson();
+		Map<String, Object> studiesData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());		
+		return studiesData;
 	}
+
+	public static Map<String, Object> getSubjectsForStudy(String studyToken) throws NoSuchAlgorithmException, IOException{
+		HashMap<String, String> formvars = new HashMap<String, String>();
+		formvars.put("deviceID", getDeviceId());
+		formvars.put("validation", getValidation());
+		formvars.put("studyToken", studyToken);
+		HttpResponse response = postValues(formvars, baseApiUrl+"getSubjectsForStudy");	
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+		String json = "";
+		String s = "";
+		while ((s = stdInput.readLine()) != null) {
+			json += s;
+		} 
+		Gson gson = new Gson();
+		Map<String, Object> subjectsData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+		return subjectsData;
+	}
+
+	public static Map<String, Object> getAssaysForStudy(String studyToken) throws NoSuchAlgorithmException, IOException{
+		HashMap<String, String> formvars = new HashMap<String, String>();
+		formvars.put("deviceID", getDeviceId());
+		formvars.put("validation", getValidation());
+		formvars.put("studyToken", studyToken);
+		HttpResponse response = postValues(formvars, baseApiUrl+"getAssaysForStudy");	
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+		String json = "";
+		String s = "";
+		while ((s = stdInput.readLine()) != null) {
+			json += s;
+		} 
+		Gson gson = new Gson();
+		Map<String, Object> subjectsData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+		return subjectsData;
+	}
+
+	public static Map<String, Object> getSamplesForAssay(String assayToken) throws NoSuchAlgorithmException, IOException{
+		HashMap<String, String> formvars = new HashMap<String, String>();
+		formvars.put("deviceID", getDeviceId());
+		formvars.put("validation", getValidation());
+		formvars.put("assayToken", assayToken);
+		HttpResponse response = postValues(formvars, baseApiUrl+"getAssaysForStudy");	
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+		String json = "";
+		String s = "";
+		while ((s = stdInput.readLine()) != null) {
+			json += s;
+		} 
+		Gson gson = new Gson();
+		Map<String, Object> subjectsData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+		return subjectsData;
+	}
+
+	public static Map<String, Object> getMeasurementDataForAssay(String assayToken) throws NoSuchAlgorithmException, IOException{
+		HashMap<String, String> formvars = new HashMap<String, String>();
+		formvars.put("deviceID", getDeviceId());
+		formvars.put("validation", getValidation());
+		formvars.put("assayToken", assayToken);
+		HttpResponse response = postValues(formvars, baseApiUrl+"getMeasurementDataForAssay");	
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+		String json = "";
+		String s = "";
+		while ((s = stdInput.readLine()) != null) {
+			json += s;
+		} 
+		Gson gson = new Gson();
+		Map<String, Object> subjectsData = gson.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
+		return subjectsData;
+	}
+
+
 
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-		// TODO Auto-generated method stub
+		Map<String, String> loginData = authenticate();
+		System.out.println(loginData.get("token"));
 		authenticate();
-		System.out.println(getStudies());
-
+		Map<String, Object> studiesInfo = getStudies();
+		System.out.println(studiesInfo);
+		List studiesArray = (List) studiesInfo.get("studies");
+		Map<String, Object> studies = (Map<String, Object>) studiesArray.get(0);
+		String studyToken = (String) studies.get("token");
+		System.out.println(getSubjectsForStudy(studyToken));
+		
+		Map<String, Object> assayInfo = getAssaysForStudy(studyToken);
+		List assayArray = (List) assayInfo.get("subjects");
+		/*Map<String, Object> assays = (Map<String, Object>) assayArray.get(0);
+		String assayToken = (String) assays.get("token");
+		System.out.println("AssayToken: "+assayToken);
+		System.out.println(getMeasurementDataForAssay(assayToken));
+		*/
 	}
 
+
+	
 }
+
+
